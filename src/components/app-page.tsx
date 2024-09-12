@@ -154,7 +154,7 @@ export function AppPage() {
                       <Label htmlFor={`${comodo}-upload`}>
                         Fazer Upload de Foto
                       </Label>
-                      <div className="mt-1 flex items-center">
+                      <div className="mt-1 flex items-center relative">
                         <Input
                           id={`${comodo}-upload`}
                           type="file"
