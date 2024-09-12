@@ -126,8 +126,8 @@ export function AppPage() {
   };
 
   return (
-    <section className="w-screen h-screen bg-background flex">
-      <div className="w-screen h-screen max-w-[1280px] p-4 my-0 mx-auto">
+    <section className="w-screen lg:h-screen bg-background flex items-center justify-center">
+      <div className="max-w-[1280px] p-4 my-0 mx-auto">
         <h1 className="text-2xl font-bold mb-6 text-center">
           Upload de Fotos para Inspeção de Imóveis
         </h1>
