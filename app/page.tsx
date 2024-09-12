@@ -1,5 +1,5 @@
-import { AppPage } from "@/components/app-page"
+import { AppPage } from "@/components/app-page";
 
 export default function Page() {
-  return <AppPage />
+  return <AppPage />;
 }

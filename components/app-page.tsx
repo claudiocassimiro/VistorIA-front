@@ -7,7 +7,6 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -59,8 +58,13 @@ export function AppPage() {
     }));
   };
 
-  const enviarFotos = async (comodo: string) => {
-    if (!fotos[comodo] || fotos[comodo].length === 0) {
+  const enviarTodasFotos = async () => {
+    const todosComodos = Object.keys(fotos);
+    const temFotosParaEnviar = todosComodos.some(
+      (comodo) => fotos[comodo]?.length > 0
+    );
+
+    if (!temFotosParaEnviar) {
       toast({
         title: "Sem fotos para enviar",
         description: "Por favor, selecione algumas fotos primeiro.",
@@ -70,11 +74,16 @@ export function AppPage() {
     }
 
     setEstaEnviando(true);
-    setProgressoUpload({ ...progressoUpload, [comodo]: 0 });
+    setProgressoUpload(
+      todosComodos.reduce((acc, comodo) => ({ ...acc, [comodo]: 0 }), {})
+    );
 
     const formData = new FormData();
-    fotos[comodo].forEach((arquivo, index) => {
-      formData.append(`foto-${index}`, arquivo);
+    todosComodos.forEach((comodo) => {
+      fotos[comodo]?.forEach((arquivo, index) => {
+        formData.append("fotos", arquivo, `${comodo}_${index}_${arquivo.name}`);
+        formData.append("room", comodo);
+      });
     });
 
     try {
@@ -87,30 +96,12 @@ export function AppPage() {
         throw new Error(`Erro HTTP! status: ${resposta.status}`);
       }
 
-      const leitor = resposta.body?.getReader();
-      const tamanhoConteudo = +resposta.headers.get("Content-Length")!;
-      let tamanhoRecebido = 0;
-
-      while (true) {
-        const { done, value } = await leitor!.read();
-
-        if (done) {
-          break;
-        }
-
-        tamanhoRecebido += value.length;
-        setProgressoUpload((anterior) => ({
-          ...anterior,
-          [comodo]: Math.round((tamanhoRecebido / tamanhoConteudo) * 100),
-        }));
-      }
-
       toast({
         title: "Upload bem-sucedido",
-        description: `Fotos do(a) ${comodo} enviadas com sucesso.`,
+        description: "Todas as fotos foram enviadas com sucesso.",
       });
 
-      setFotos((anterior) => ({ ...anterior, [comodo]: [] }));
+      setFotos({});
     } catch (erro) {
       console.error("Falha no upload:", erro);
       toast({
@@ -121,23 +112,23 @@ export function AppPage() {
       });
     } finally {
       setEstaEnviando(false);
-      setProgressoUpload((anterior) => ({ ...anterior, [comodo]: 0 }));
+      setProgressoUpload({});
     }
   };
 
   return (
     <section className="w-screen lg:h-screen bg-background flex items-center justify-center">
-      <div className="max-w-[1280px] p-4 my-0 mx-auto">
+      <div className="w-full max-w-[1280px] p-4 my-0 mx-auto">
         <h1 className="text-2xl font-bold mb-6 text-center">
           Upload de Fotos para Inspeção de Imóveis
         </h1>
         <Tabs defaultValue={comodos[0]}>
-          <TabsList className="flex flex-wrap justify-center h-auto mb-8">
+          <TabsList className="flex flex-wrap justify-center h-auto mb-8 w-full">
             {comodos.map((comodo) => (
               <TabsTrigger
                 key={comodo}
                 value={comodo}
-                className="px-3 py-2 text-sm rounded-md m-1 bg-white border border-gray-200 hover:bg-gray-100 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                className="flex-1 min-w-[120px] px-3 py-2 text-sm rounded-md m-1 bg-white border border-gray-200 hover:bg-gray-100 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
               >
                 {comodo}
               </TabsTrigger>
@@ -225,22 +216,17 @@ export function AppPage() {
                       className="w-full"
                     />
                   )}
-                </CardContent>
-                <CardFooter>
                   <Button
-                    className="w-full"
-                    onClick={() => enviarFotos(comodo)}
+                    className="w-full mb-6"
+                    onClick={enviarTodasFotos}
                     disabled={
                       estaEnviando ||
-                      !fotos[comodo] ||
-                      fotos[comodo].length === 0
+                      Object.values(fotos).every((f) => f.length === 0)
                     }
                   >
-                    {estaEnviando
-                      ? "Enviando..."
-                      : `Salvar Fotos do(a) ${comodo}`}
+                    {estaEnviando ? "Enviando..." : "Enviar todas as fotos"}
                   </Button>
-                </CardFooter>
+                </CardContent>
               </Card>
             </TabsContent>
           ))}
