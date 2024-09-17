@@ -29,6 +29,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/src/components/ui/select";
+import { Textarea } from "@/src/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose,
+} from "@/src/components/ui/dialog";
 
 const comodos = [
   "Sala de Estar",
@@ -43,8 +52,13 @@ const comodos = [
   "Garagem",
 ];
 
+interface Foto {
+  arquivo: File;
+  observacao: string;
+}
+
 export function AppPage() {
-  const [fotos, setFotos] = useState<{ [key: string]: File[] }>({});
+  const [fotos, setFotos] = useState<{ [key: string]: Foto[] }>({});
   const [progressoUpload, setProgressoUpload] = useState<{
     [key: string]: number;
   }>({});
@@ -70,7 +84,13 @@ export function AppPage() {
     if (arquivos) {
       setFotos((fotosAnteriores) => ({
         ...fotosAnteriores,
-        [comodo]: [...(fotosAnteriores[comodo] || []), ...Array.from(arquivos)],
+        [comodo]: [
+          ...(fotosAnteriores[comodo] || []),
+          ...Array.from(arquivos).map((arquivo) => ({
+            arquivo,
+            observacao: "",
+          })),
+        ],
       }));
     }
   };
@@ -79,6 +99,19 @@ export function AppPage() {
     setFotos((fotosAnteriores) => ({
       ...fotosAnteriores,
       [comodo]: fotosAnteriores[comodo].filter((_, i) => i !== index),
+    }));
+  };
+
+  const adicionarObservacao = (
+    comodo: string,
+    index: number,
+    observacao: string
+  ) => {
+    setFotos((fotosAnteriores) => ({
+      ...fotosAnteriores,
+      [comodo]: fotosAnteriores[comodo].map((foto, i) =>
+        i === index ? { ...foto, observacao } : foto
+      ),
     }));
   };
 
@@ -122,8 +155,13 @@ export function AppPage() {
     formData.append("endereco_imovel", enderecoImovel);
     formData.append("numero_apartamento", numeroApartamento);
     todosComodos.forEach((comodo) => {
-      fotos[comodo]?.forEach((arquivo, index) => {
-        formData.append("file", arquivo, `${comodo}_${index}_${arquivo.name}`);
+      fotos[comodo]?.forEach((foto, index) => {
+        formData.append(
+          "file",
+          foto.arquivo,
+          `${comodo}_${index}_${foto.arquivo.name}`
+        );
+        formData.append(`observacao_${comodo}_${index}`, foto.observacao);
       });
     });
 
@@ -346,7 +384,7 @@ export function AppPage() {
                         {fotos[comodo].map((foto, index) => (
                           <div key={index} className="relative">
                             <Image
-                              src={URL.createObjectURL(foto)}
+                              src={URL.createObjectURL(foto.arquivo)}
                               alt={`Foto ${index + 1} do(a) ${comodo}`}
                               width={200}
                               height={200}
@@ -360,6 +398,42 @@ export function AppPage() {
                             >
                               <XIcon className="h-4 w-4" />
                             </Button>
+                            <Dialog>
+                              <DialogTrigger asChild>
+                                <Button
+                                  variant="default"
+                                  size="sm"
+                                  className="absolute bottom-1 right-1"
+                                >
+                                  Observação
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent className="p-4 bg-white">
+                                <DialogHeader>
+                                  <DialogTitle>Observação da Foto</DialogTitle>
+                                </DialogHeader>
+                                <Textarea
+                                  value={foto.observacao}
+                                  onChange={(e) => {
+                                    const novaObservacao = e.target.value;
+                                    adicionarObservacao(
+                                      comodo,
+                                      index,
+                                      novaObservacao
+                                    );
+                                  }}
+                                  placeholder="Digite sua observação aqui..."
+                                  className="resize-none"
+                                />
+                                <div className="mt-4 flex justify-end">
+                                  <DialogClose>
+                                    <Button type="button" variant="default">
+                                      Confirmar
+                                    </Button>
+                                  </DialogClose>
+                                </div>
+                              </DialogContent>
+                            </Dialog>
                           </div>
                         ))}
                       </div>
