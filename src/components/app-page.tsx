@@ -39,7 +39,7 @@ import {
   DialogClose,
 } from "@/src/components/ui/dialog";
 
-const comodos = [
+const initialComodos = [
   "Sala de Estar",
   "Terraço",
   "Varanda",
@@ -52,12 +52,24 @@ const comodos = [
   "Garagem",
 ];
 
-interface Foto {
-  arquivo: File;
-  observacao: string;
-}
-
 export function AppPage() {
+  const [comodos, setComodos] = useState<string[]>(initialComodos);
+
+  const [novoComodo, setNovoComodo] = useState("");
+
+  // Função para adicionar novo cômodo
+  const adicionarComodo = () => {
+    if (novoComodo.trim() && !comodos.includes(novoComodo)) {
+      setComodos((prevComodos) => [...prevComodos, novoComodo]);
+      setNovoComodo(""); // Limpa o campo de entrada
+    }
+  };
+
+  interface Foto {
+    arquivo: File;
+    observacao: string;
+  }
+
   const [fotos, setFotos] = useState<{ [key: string]: Foto[] }>({});
   const [progressoUpload, setProgressoUpload] = useState<{
     [key: string]: number;
@@ -198,6 +210,10 @@ export function AppPage() {
         setDataInicio(undefined);
         setEnderecoImovel("");
         setNumeroApartamento("");
+        setNovoComodo(""); // Limpa o campo de novo cômodo
+        setComodos((prevComodos) =>
+          prevComodos.filter((comodo) => !comodo.startsWith("Novo"))
+        ); // Remove os cômodos extras
       } else {
         throw new Error("A resposta do servidor não é um PDF válido");
       }
@@ -223,6 +239,20 @@ export function AppPage() {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+
+      // Resetando o estado do aplicativo após o download
+      setFotos({});
+      setNomeVistoriador("");
+      setTipoVistoria("entrada");
+      setNomeEdificio("");
+      setLocador("");
+      setLocatario("");
+      setDataInicio(undefined);
+      setEnderecoImovel("");
+      setNumeroApartamento("");
+      setNovoComodo(""); // Limpa o campo de novo cômodo
+      setComodos(initialComodos); // Remove os cômodos extras
+      setPdfUrl("");
     }
   };
 
@@ -317,6 +347,19 @@ export function AppPage() {
               placeholder="Digite o número do apartamento"
               className="mt-1"
             />
+          </div>
+        </div>
+        <div className="mb-4">
+          <Label htmlFor="novoComodo">Adicionar Novo Cômodo</Label>
+          <div className="flex">
+            <Input
+              id="novoComodo"
+              value={novoComodo}
+              onChange={(e) => setNovoComodo(e.target.value)}
+              placeholder="Digite o nome do novo cômodo"
+              className="mt-1 mr-2"
+            />
+            <Button onClick={adicionarComodo}>Adicionar</Button>
           </div>
         </div>
         <Tabs defaultValue={comodos[0]}>
@@ -455,7 +498,13 @@ export function AppPage() {
                     disabled={
                       estaEnviando ||
                       Object.values(fotos).every((f) => f.length === 0) ||
-                      !nomeVistoriador.trim()
+                      !nomeVistoriador.trim() ||
+                      !tipoVistoria || // Verifica se o tipo de vistoria está selecionado
+                      !nomeEdificio.trim() || // Verifica se o nome do edifício está preenchido
+                      !locador.trim() || // Verifica se o locador está preenchido
+                      !locatario.trim() || // Verifica se o locatário está preenchido
+                      !enderecoImovel.trim() || // Verifica se o endereço do imóvel está preenchido
+                      !numeroApartamento.trim() // Verifica se o número do apartamento está preenchido
                     }
                   >
                     {estaEnviando ? "Enviando..." : "Enviar todas as fotos"}
