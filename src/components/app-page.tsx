@@ -38,6 +38,7 @@ import {
   DialogTrigger,
   DialogClose,
 } from "@/src/components/ui/dialog";
+import { useForm, Controller } from "react-hook-form";
 
 const initialComodos = [
   "Sala de Estar",
@@ -52,16 +53,41 @@ const initialComodos = [
   "Garagem",
 ];
 
+interface FormData {
+  nomeVistoriador: string;
+  tipoVistoria: "entrada" | "saida";
+  nomeEdificio: string;
+  locador: string;
+  locatario: string;
+  dataInicio: Date | undefined;
+  enderecoImovel: string;
+  numeroApartamento: string;
+  novoComodo: string;
+}
+
 export function AppPage() {
   const [comodos, setComodos] = useState<string[]>(initialComodos);
-
-  const [novoComodo, setNovoComodo] = useState("");
+  const { register, handleSubmit, control, setValue, watch, reset, formState } =
+    useForm<FormData>({
+      defaultValues: {
+        nomeVistoriador: "",
+        tipoVistoria: "entrada",
+        nomeEdificio: "",
+        locador: "",
+        locatario: "",
+        dataInicio: undefined,
+        enderecoImovel: "",
+        numeroApartamento: "",
+        novoComodo: "",
+      },
+    });
 
   // Função para adicionar novo cômodo
   const adicionarComodo = () => {
+    const novoComodo = watch("novoComodo");
     if (novoComodo.trim() && !comodos.includes(novoComodo)) {
       setComodos((prevComodos) => [...prevComodos, novoComodo]);
-      setNovoComodo(""); // Limpa o campo de entrada
+      setValue("novoComodo", ""); // Limpa o campo de entrada
     }
   };
 
@@ -75,18 +101,8 @@ export function AppPage() {
     [key: string]: number;
   }>({});
   const [estaEnviando, setEstaEnviando] = useState(false);
-  const [nomeVistoriador, setNomeVistoriador] = useState("");
   const [pdfUrl, setPdfUrl] = useState("");
   const { toast } = useToast();
-  const [tipoVistoria, setTipoVistoria] = useState<"entrada" | "saida">(
-    "entrada"
-  );
-  const [nomeEdificio, setNomeEdificio] = useState("");
-  const [locador, setLocador] = useState("");
-  const [locatario, setLocatario] = useState("");
-  const [dataInicio, setDataInicio] = useState<Date | undefined>(undefined);
-  const [enderecoImovel, setEnderecoImovel] = useState("");
-  const [numeroApartamento, setNumeroApartamento] = useState("");
 
   const handleUploadArquivo = (
     comodo: string,
@@ -127,8 +143,8 @@ export function AppPage() {
     }));
   };
 
-  const enviarTodasFotos = async () => {
-    if (!nomeVistoriador.trim()) {
+  const enviarTodasFotos = async (data: FormData) => {
+    if (!data.nomeVistoriador.trim()) {
       toast({
         title: "Nome do vistoriador não informado",
         description:
@@ -158,14 +174,17 @@ export function AppPage() {
     );
 
     const formData = new FormData();
-    formData.append("nome_vistoriador", nomeVistoriador);
-    formData.append("tipo_vistoria", tipoVistoria);
-    formData.append("nome_edificio", nomeEdificio);
-    formData.append("locador", locador);
-    formData.append("locatario", locatario);
-    formData.append("data_inicio", dataInicio ? dataInicio.toISOString() : "");
-    formData.append("endereco_imovel", enderecoImovel);
-    formData.append("numero_apartamento", numeroApartamento);
+    formData.append("nome_vistoriador", data.nomeVistoriador);
+    formData.append("tipo_vistoria", data.tipoVistoria);
+    formData.append("nome_edificio", data.nomeEdificio);
+    formData.append("locador", data.locador);
+    formData.append("locatario", data.locatario);
+    formData.append(
+      "data_inicio",
+      data.dataInicio ? data.dataInicio.toISOString() : ""
+    );
+    formData.append("endereco_imovel", data.enderecoImovel);
+    formData.append("numero_apartamento", data.numeroApartamento);
     todosComodos.forEach((comodo) => {
       fotos[comodo]?.forEach((foto, index) => {
         formData.append(
@@ -205,15 +224,7 @@ export function AppPage() {
 
         // Limpar todos os campos após o upload bem-sucedido
         setFotos({});
-        setNomeVistoriador("");
-        setTipoVistoria("entrada");
-        setNomeEdificio("");
-        setLocador("");
-        setLocatario("");
-        setDataInicio(undefined);
-        setEnderecoImovel("");
-        setNumeroApartamento("");
-        setNovoComodo(""); // Limpa o campo de novo cômodo
+        reset();
         setComodos((prevComodos) =>
           prevComodos.filter((comodo) => !comodo.startsWith("Novo"))
         ); // Remove os cômodos extras
@@ -245,15 +256,7 @@ export function AppPage() {
 
       // Resetando o estado do aplicativo após o download
       setFotos({});
-      setNomeVistoriador("");
-      setTipoVistoria("entrada");
-      setNomeEdificio("");
-      setLocador("");
-      setLocatario("");
-      setDataInicio(undefined);
-      setEnderecoImovel("");
-      setNumeroApartamento("");
-      setNovoComodo(""); // Limpa o campo de novo cômodo
+      reset();
       setComodos(initialComodos); // Remove os cômodos extras
       setPdfUrl("");
     }
@@ -265,258 +268,272 @@ export function AppPage() {
         <h1 className="text-2xl font-bold mb-6 text-center">
           Upload de Fotos para Inspeção de Imóveis
         </h1>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          <div>
-            <Label htmlFor="nomeVistoriador">Nome do Vistoriador</Label>
-            <Input
-              id="nomeVistoriador"
-              value={nomeVistoriador}
-              onChange={(e) => setNomeVistoriador(e.target.value)}
-              placeholder="Digite o nome do vistoriador"
-              className="mt-1"
-            />
+        <form onSubmit={handleSubmit(enviarTodasFotos)}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div>
+              <Label htmlFor="nomeVistoriador">Nome do Vistoriador</Label>
+              <Input
+                id="nomeVistoriador"
+                {...register("nomeVistoriador", { required: true })}
+                placeholder="Digite o nome do vistoriador"
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label htmlFor="tipoVistoria">Tipo de Vistoria</Label>
+              <Controller
+                name="tipoVistoria"
+                control={control}
+                rules={{ required: true }}
+                render={({ field }) => (
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Selecione o tipo de vistoria" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="entrada">
+                        Vistoria de Entrada
+                      </SelectItem>
+                      <SelectItem value="saida">Vistoria de Saída</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </div>
+            <div>
+              <Label htmlFor="nomeEdificio">Nome do Edifício</Label>
+              <Input
+                id="nomeEdificio"
+                {...register("nomeEdificio", { required: true })}
+                placeholder="Digite o nome do edifício"
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label htmlFor="locador">Locador</Label>
+              <Input
+                id="locador"
+                {...register("locador", { required: true })}
+                placeholder="Digite o nome do locador"
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label htmlFor="locatario">Locatário</Label>
+              <Input
+                id="locatario"
+                {...register("locatario", { required: true })}
+                placeholder="Digite o nome do locatário"
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label>Data de Início</Label>
+              <Controller
+                name="dataInicio"
+                control={control}
+                rules={{ required: true }}
+                render={({ field }) => (
+                  <Calendar
+                    mode="single"
+                    selected={field.value}
+                    onSelect={field.onChange}
+                    className="mt-1"
+                  />
+                )}
+              />
+            </div>
+            <div>
+              <Label htmlFor="enderecoImovel">Endereço do Imóvel</Label>
+              <Input
+                id="enderecoImovel"
+                {...register("enderecoImovel", { required: true })}
+                placeholder="Digite o endereço do imóvel"
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label htmlFor="numeroApartamento">Número do Apartamento</Label>
+              <Input
+                id="numeroApartamento"
+                {...register("numeroApartamento", { required: true })}
+                placeholder="Digite o número do apartamento"
+                className="mt-1"
+              />
+            </div>
           </div>
-          <div>
-            <Label htmlFor="tipoVistoria">Tipo de Vistoria</Label>
-            <Select
-              onValueChange={(value: "entrada" | "saida") =>
-                setTipoVistoria(value)
-              }
-            >
-              <SelectTrigger className="mt-1">
-                <SelectValue placeholder="Selecione o tipo de vistoria" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="entrada">Vistoria de Entrada</SelectItem>
-                <SelectItem value="saida">Vistoria de Saída</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="mb-4">
+            <Label htmlFor="novoComodo">Adicionar Novo Cômodo</Label>
+            <div className="flex">
+              <Input
+                id="novoComodo"
+                {...register("novoComodo")}
+                placeholder="Digite o nome do novo cômodo"
+                className="mt-1 mr-2"
+              />
+              <Button type="button" onClick={adicionarComodo}>
+                Adicionar
+              </Button>
+            </div>
           </div>
-          <div>
-            <Label htmlFor="nomeEdificio">Nome do Edifício</Label>
-            <Input
-              id="nomeEdificio"
-              value={nomeEdificio}
-              onChange={(e) => setNomeEdificio(e.target.value)}
-              placeholder="Digite o nome do edifício"
-              className="mt-1"
-            />
-          </div>
-          <div>
-            <Label htmlFor="locador">Locador</Label>
-            <Input
-              id="locador"
-              value={locador}
-              onChange={(e) => setLocador(e.target.value)}
-              placeholder="Digite o nome do locador"
-              className="mt-1"
-            />
-          </div>
-          <div>
-            <Label htmlFor="locatario">Locatário</Label>
-            <Input
-              id="locatario"
-              value={locatario}
-              onChange={(e) => setLocatario(e.target.value)}
-              placeholder="Digite o nome do locatário"
-              className="mt-1"
-            />
-          </div>
-          <div>
-            <Label>Data de Início</Label>
-            <Calendar
-              mode="single"
-              selected={dataInicio}
-              onSelect={setDataInicio}
-              className="mt-1"
-            />
-          </div>
-          <div>
-            <Label htmlFor="enderecoImovel">Endereço do Imóvel</Label>
-            <Input
-              id="enderecoImovel"
-              value={enderecoImovel}
-              onChange={(e) => setEnderecoImovel(e.target.value)}
-              placeholder="Digite o endereço do imóvel"
-              className="mt-1"
-            />
-          </div>
-          <div>
-            <Label htmlFor="numeroApartamento">Número do Apartamento</Label>
-            <Input
-              id="numeroApartamento"
-              value={numeroApartamento}
-              onChange={(e) => setNumeroApartamento(e.target.value)}
-              placeholder="Digite o número do apartamento"
-              className="mt-1"
-            />
-          </div>
-        </div>
-        <div className="mb-4">
-          <Label htmlFor="novoComodo">Adicionar Novo Cômodo</Label>
-          <div className="flex">
-            <Input
-              id="novoComodo"
-              value={novoComodo}
-              onChange={(e) => setNovoComodo(e.target.value)}
-              placeholder="Digite o nome do novo cômodo"
-              className="mt-1 mr-2"
-            />
-            <Button onClick={adicionarComodo}>Adicionar</Button>
-          </div>
-        </div>
-        <Tabs defaultValue={comodos[0]}>
-          <TabsList className="flex flex-wrap justify-center h-auto mb-8 w-full">
+          <Tabs defaultValue={comodos[0]}>
+            <TabsList className="flex flex-wrap justify-center h-auto mb-8 w-full">
+              {comodos.map((comodo) => (
+                <TabsTrigger
+                  key={comodo}
+                  value={comodo}
+                  className="flex-1 min-w-[120px] px-3 py-2 text-sm rounded-md m-1 bg-white border border-gray-200 hover:bg-gray-100 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                >
+                  {comodo}
+                </TabsTrigger>
+              ))}
+            </TabsList>
             {comodos.map((comodo) => (
-              <TabsTrigger
-                key={comodo}
-                value={comodo}
-                className="flex-1 min-w-[120px] px-3 py-2 text-sm rounded-md m-1 bg-white border border-gray-200 hover:bg-gray-100 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-              >
-                {comodo}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-          {comodos.map((comodo) => (
-            <TabsContent key={comodo} value={comodo} className="mt-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>{comodo}</CardTitle>
-                  <CardDescription>
-                    Faça upload ou tire fotos do(a) {comodo.toLowerCase()}.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor={`${comodo}-upload`}>
-                        Fazer Upload de Foto
-                      </Label>
-                      <div className="mt-1 flex items-center relative">
-                        <Input
-                          id={`${comodo}-upload`}
-                          type="file"
-                          accept="image/*"
-                          multiple
-                          onChange={(e) => handleUploadArquivo(comodo, e)}
-                          className="sr-only"
-                        />
-                        <Label
-                          htmlFor={`${comodo}-upload`}
-                          className="cursor-pointer bg-white py-2 px-3 border border-gray-300 rounded-md shadow-sm text-sm leading-4 font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                        >
-                          <UploadIcon className="h-4 w-4 inline-block mr-1" />
-                          Escolher arquivos
+              <TabsContent key={comodo} value={comodo} className="mt-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>{comodo}</CardTitle>
+                    <CardDescription>
+                      Faça upload ou tire fotos do(a) {comodo.toLowerCase()}.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor={`${comodo}-upload`}>
+                          Fazer Upload de Foto
                         </Label>
+                        <div className="mt-1 flex items-center relative">
+                          <Input
+                            id={`${comodo}-upload`}
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            onChange={(e) => handleUploadArquivo(comodo, e)}
+                            className="sr-only"
+                          />
+                          <Label
+                            htmlFor={`${comodo}-upload`}
+                            className="cursor-pointer bg-white py-2 px-3 border border-gray-300 rounded-md shadow-sm text-sm leading-4 font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                          >
+                            <UploadIcon className="h-4 w-4 inline-block mr-1" />
+                            Escolher arquivos
+                          </Label>
+                        </div>
+                      </div>
+                      <div>
+                        <Label htmlFor={`${comodo}-camera`}>Tirar Foto</Label>
+                        <div className="mt-1">
+                          <Button
+                            id={`${comodo}-camera`}
+                            variant="outline"
+                            className="w-full"
+                          >
+                            <CameraIcon className="h-4 w-4 mr-1" />
+                            Abrir Câmera
+                          </Button>
+                        </div>
                       </div>
                     </div>
-                    <div>
-                      <Label htmlFor={`${comodo}-camera`}>Tirar Foto</Label>
-                      <div className="mt-1">
-                        <Button
-                          id={`${comodo}-camera`}
-                          variant="outline"
-                          className="w-full"
-                        >
-                          <CameraIcon className="h-4 w-4 mr-1" />
-                          Abrir Câmera
-                        </Button>
-                      </div>
+                    <div className="border-2 border-dashed border-gray-300 rounded-md p-4">
+                      {fotos[comodo] && fotos[comodo].length > 0 ? (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                          {fotos[comodo].map((foto, index) => (
+                            <div key={index} className="relative">
+                              <Image
+                                src={URL.createObjectURL(foto.arquivo)}
+                                alt={`Foto ${index + 1} do(a) ${comodo}`}
+                                width={200}
+                                height={200}
+                                className="rounded-md object-cover w-full h-32"
+                              />
+                              <Button
+                                variant="destructive"
+                                size="icon"
+                                className="absolute top-1 right-1"
+                                onClick={() => removerFoto(comodo, index)}
+                              >
+                                <XIcon className="h-4 w-4" />
+                              </Button>
+                              <Dialog>
+                                <DialogTrigger asChild>
+                                  <Button
+                                    variant="default"
+                                    size="sm"
+                                    className="absolute bottom-1 right-1"
+                                  >
+                                    Observação
+                                  </Button>
+                                </DialogTrigger>
+                                <DialogContent className="p-4 bg-white">
+                                  <DialogHeader>
+                                    <DialogTitle>
+                                      Observação da Foto
+                                    </DialogTitle>
+                                  </DialogHeader>
+                                  <Textarea
+                                    value={foto.observacao}
+                                    onChange={(e) => {
+                                      const novaObservacao = e.target.value;
+                                      adicionarObservacao(
+                                        comodo,
+                                        index,
+                                        novaObservacao
+                                      );
+                                    }}
+                                    placeholder="Digite sua observação aqui..."
+                                    className="resize-none"
+                                  />
+                                  <div className="mt-4 flex justify-end">
+                                    <DialogClose>
+                                      <Button type="button" variant="default">
+                                        Confirmar
+                                      </Button>
+                                    </DialogClose>
+                                  </div>
+                                </DialogContent>
+                              </Dialog>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-center text-gray-500">
+                          Nenhuma foto carregada ainda
+                        </p>
+                      )}
                     </div>
-                  </div>
-                  <div className="border-2 border-dashed border-gray-300 rounded-md p-4">
-                    {fotos[comodo] && fotos[comodo].length > 0 ? (
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                        {fotos[comodo].map((foto, index) => (
-                          <div key={index} className="relative">
-                            <Image
-                              src={URL.createObjectURL(foto.arquivo)}
-                              alt={`Foto ${index + 1} do(a) ${comodo}`}
-                              width={200}
-                              height={200}
-                              className="rounded-md object-cover w-full h-32"
-                            />
-                            <Button
-                              variant="destructive"
-                              size="icon"
-                              className="absolute top-1 right-1"
-                              onClick={() => removerFoto(comodo, index)}
-                            >
-                              <XIcon className="h-4 w-4" />
-                            </Button>
-                            <Dialog>
-                              <DialogTrigger asChild>
-                                <Button
-                                  variant="default"
-                                  size="sm"
-                                  className="absolute bottom-1 right-1"
-                                >
-                                  Observação
-                                </Button>
-                              </DialogTrigger>
-                              <DialogContent className="p-4 bg-white">
-                                <DialogHeader>
-                                  <DialogTitle>Observação da Foto</DialogTitle>
-                                </DialogHeader>
-                                <Textarea
-                                  value={foto.observacao}
-                                  onChange={(e) => {
-                                    const novaObservacao = e.target.value;
-                                    adicionarObservacao(
-                                      comodo,
-                                      index,
-                                      novaObservacao
-                                    );
-                                  }}
-                                  placeholder="Digite sua observação aqui..."
-                                  className="resize-none"
-                                />
-                                <div className="mt-4 flex justify-end">
-                                  <DialogClose>
-                                    <Button type="button" variant="default">
-                                      Confirmar
-                                    </Button>
-                                  </DialogClose>
-                                </div>
-                              </DialogContent>
-                            </Dialog>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-center text-gray-500">
-                        Nenhuma foto carregada ainda
-                      </p>
+                    {progressoUpload[comodo] > 0 && (
+                      <Progress
+                        value={progressoUpload[comodo]}
+                        className="w-full"
+                      />
                     )}
-                  </div>
-                  {progressoUpload[comodo] > 0 && (
-                    <Progress
-                      value={progressoUpload[comodo]}
-                      className="w-full"
-                    />
-                  )}
-                  <Button
-                    className="w-full mb-6"
-                    onClick={enviarTodasFotos}
-                    disabled={
-                      estaEnviando ||
-                      Object.values(fotos).every((f) => f.length === 0) ||
-                      !nomeVistoriador.trim() ||
-                      !tipoVistoria || // Verifica se o tipo de vistoria está selecionado
-                      !nomeEdificio.trim() || // Verifica se o nome do edifício está preenchido
-                      !locador.trim() || // Verifica se o locador está preenchido
-                      !locatario.trim() || // Verifica se o locatário está preenchido
-                      !enderecoImovel.trim() || // Verifica se o endereço do imóvel está preenchido
-                      !numeroApartamento.trim() // Verifica se o número do apartamento está preenchido
-                    }
-                  >
-                    {estaEnviando ? "Enviando..." : "Enviar todas as fotos"}
-                  </Button>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          ))}
-        </Tabs>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            ))}
+          </Tabs>
+          <Button
+            className="w-full mt-6"
+            type="submit"
+            disabled={
+              estaEnviando ||
+              Object.values(fotos).every((f) => f.length === 0) ||
+              !formState.isValid ||
+              pdfUrl !== "" ||
+              !watch("nomeVistoriador") ||
+              !watch("tipoVistoria") ||
+              !watch("nomeEdificio") ||
+              !watch("locador") ||
+              !watch("locatario") ||
+              !watch("dataInicio") ||
+              !watch("enderecoImovel") ||
+              !watch("numeroApartamento")
+            }
+          >
+            {estaEnviando ? "Enviando..." : "Enviar todas as fotos"}
+          </Button>
+        </form>
         <div className="mt-6">
           {pdfUrl && (
             <Button className="w-full" onClick={handleDownloadPDF}>
