@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { Button } from "@/src/components/ui/button";
 import {
@@ -51,6 +51,16 @@ const initialComodos = [
   "Sala de Jantar",
   "Escritório",
   "Garagem",
+];
+
+const mensagens = [
+  "Processando...",
+  "Calma que eu to criando o documento...",
+  "Muita foto, deixa eu pensar...",
+  "Não mexe em nada, tô pensando...",
+  "Adicionando descrições as fotos...",
+  "Adicionando as fotos no PDF...",
+  "Retoques finais...",
 ];
 
 interface FormData {
@@ -261,6 +271,16 @@ export function AppPage() {
       setPdfUrl("");
     }
   };
+
+  const [mensagemAtual, setMensagemAtual] = useState(mensagens[0]);
+
+  useEffect(() => {
+    const intervalo = setInterval(() => {
+      setMensagemAtual(mensagens[Math.floor(Math.random() * mensagens.length)]);
+    }, 3000);
+
+    return () => clearInterval(intervalo);
+  }, []);
 
   return (
     <section className="w-screen bg-background flex items-center justify-center">
@@ -531,7 +551,15 @@ export function AppPage() {
               !watch("numeroApartamento")
             }
           >
-            {estaEnviando ? "Enviando..." : "Enviar todas as fotos"}
+            {estaEnviando ? (
+              <>
+                {(() => {
+                  return mensagemAtual;
+                })()}
+              </>
+            ) : (
+              "Enviar todas as fotos"
+            )}
           </Button>
         </form>
         <div className="mt-6">
