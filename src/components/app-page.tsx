@@ -88,7 +88,7 @@ export function AppPage() {
         dataInicio: undefined,
         enderecoImovel: "",
         numeroApartamento: "",
-        novoComodo: "",
+        novoComodo: " ",
       },
     });
 
