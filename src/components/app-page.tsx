@@ -19,7 +19,7 @@ import {
   TabsTrigger,
 } from "@/src/components/ui/tabs";
 import { Progress } from "@/src/components/ui/progress";
-import { CameraIcon, UploadIcon, XIcon } from "lucide-react";
+import { UploadIcon, XIcon } from "lucide-react";
 import { useToast } from "@/src/hooks/use-toast";
 import { Calendar } from "@/src/components/ui/calendar";
 import {
@@ -72,12 +72,12 @@ interface FormData {
   dataInicio: Date | undefined;
   enderecoImovel: string;
   numeroApartamento: string;
-  novoComodo: string;
+  novoComodo: string | undefined;
 }
 
 export function AppPage() {
   const [comodos, setComodos] = useState<string[]>(initialComodos);
-  const { register, handleSubmit, control, setValue, watch, reset, formState } =
+  const { register, handleSubmit, control, setValue, watch, reset } =
     useForm<FormData>({
       defaultValues: {
         nomeVistoriador: "",
@@ -88,14 +88,14 @@ export function AppPage() {
         dataInicio: undefined,
         enderecoImovel: "",
         numeroApartamento: "",
-        novoComodo: " ",
+        novoComodo: undefined,
       },
     });
 
   // Função para adicionar novo cômodo
   const adicionarComodo = () => {
     const novoComodo = watch("novoComodo");
-    if (novoComodo.trim() && !comodos.includes(novoComodo)) {
+    if (novoComodo?.trim() && !comodos.includes(novoComodo)) {
       setComodos((prevComodos) => [...prevComodos, novoComodo]);
       setValue("novoComodo", ""); // Limpa o campo de entrada
     }
@@ -306,7 +306,15 @@ export function AppPage() {
                 control={control}
                 rules={{ required: true }}
                 render={({ field }) => (
-                  <Select onValueChange={field.onChange} value={field.value}>
+                  <Select
+                    onValueChange={(value: "entrada" | "saida") => {
+                      field.onChange(value);
+                      // Forçar uma atualização do formulário
+                      setValue("tipoVistoria", value, { shouldValidate: true });
+                    }}
+                    value={field.value}
+                    defaultValue="entrada"
+                  >
                     <SelectTrigger className="mt-1">
                       <SelectValue placeholder="Selecione o tipo de vistoria" />
                     </SelectTrigger>
@@ -441,7 +449,8 @@ export function AppPage() {
                           </Label>
                         </div>
                       </div>
-                      <div>
+                      {/* IMPLEMENTAR DEPOIS */}
+                      {/* <div>
                         <Label htmlFor={`${comodo}-camera`}>Tirar Foto</Label>
                         <div className="mt-1">
                           <Button
@@ -453,7 +462,7 @@ export function AppPage() {
                             Abrir Câmera
                           </Button>
                         </div>
-                      </div>
+                      </div> */}
                     </div>
                     <div className="border-2 border-dashed border-gray-300 rounded-md p-4">
                       {fotos[comodo] && fotos[comodo].length > 0 ? (
@@ -539,10 +548,9 @@ export function AppPage() {
             disabled={
               estaEnviando ||
               Object.values(fotos).every((f) => f.length === 0) ||
-              !formState.isValid ||
+              // !formState.isValid ||
               pdfUrl !== "" ||
               !watch("nomeVistoriador") ||
-              !watch("tipoVistoria") ||
               !watch("nomeEdificio") ||
               !watch("locador") ||
               !watch("locatario") ||
