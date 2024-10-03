@@ -195,16 +195,20 @@ export function AppPage() {
     );
     formData.append("endereco_imovel", data.enderecoImovel);
     formData.append("numero_apartamento", data.numeroApartamento);
+    const observacoes: { [key: string]: string } = {};
+    const rooms: { [key: string]: string } = {};
     todosComodos.forEach((comodo) => {
       fotos[comodo]?.forEach((foto, index) => {
-        formData.append(
-          "file",
-          foto.arquivo,
-          `${comodo}_${index}_${foto.arquivo.name}`
-        );
-        formData.append(`observacao_${comodo}_${index}`, foto.observacao);
+        const chave = `${comodo
+          .toLowerCase()
+          .replace(/[^a-z0-9]/g, "")}_${index}`;
+        formData.append("file", foto.arquivo, `${chave}_${foto.arquivo.name}`);
+        observacoes[chave] = foto.observacao;
+        rooms[comodo] = comodo;
       });
     });
+    formData.append("observacoes", JSON.stringify(observacoes));
+    formData.append("rooms", JSON.stringify(rooms));
 
     try {
       const resposta = await fetch(
