@@ -114,21 +114,74 @@ export function AppPage() {
   const [pdfUrl, setPdfUrl] = useState("");
   const { toast } = useToast();
 
-  const handleUploadArquivo = (
+  const compactarImagem = async (file: File): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event: ProgressEvent<FileReader>) => {
+        const img = new window.Image();
+        img.src = event.target?.result as string;
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d");
+          const MAX_WIDTH = 1280;
+          const MAX_HEIGHT = 720;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width;
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height;
+              height = MAX_HEIGHT;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          ctx?.drawImage(img, 0, 0, width, height);
+
+          canvas.toBlob(
+            (blob) => {
+              if (blob) {
+                const novoArquivo = new File([blob], file.name, {
+                  type: "image/jpeg",
+                  lastModified: Date.now(),
+                });
+                resolve(novoArquivo);
+              } else {
+                reject(new Error("Falha ao compactar a imagem"));
+              }
+            },
+            "image/jpeg",
+            0.7
+          );
+        };
+      };
+      reader.onerror = (error) => reject(error);
+    });
+  };
+
+  const handleUploadArquivo = async (
     comodo: string,
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
     const arquivos = event.target.files;
     if (arquivos) {
+      const fotosCompactadas = await Promise.all(
+        Array.from(arquivos).map(async (arquivo) => ({
+          arquivo: await compactarImagem(arquivo),
+          observacao: "",
+        }))
+      );
+
       setFotos((fotosAnteriores) => ({
         ...fotosAnteriores,
-        [comodo]: [
-          ...(fotosAnteriores[comodo] || []),
-          ...Array.from(arquivos).map((arquivo) => ({
-            arquivo,
-            observacao: "",
-          })),
-        ],
+        [comodo]: [...(fotosAnteriores[comodo] || []), ...fotosCompactadas],
       }));
     }
   };
