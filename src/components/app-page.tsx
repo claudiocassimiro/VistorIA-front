@@ -95,9 +95,13 @@ export function AppPage() {
   // Função para adicionar novo cômodo
   const adicionarComodo = () => {
     const novoComodo = watch("novoComodo");
-    if (novoComodo?.trim() && !comodos.includes(novoComodo)) {
-      setComodos((prevComodos) => [...prevComodos, novoComodo]);
-      setValue("novoComodo", ""); // Limpa o campo de entrada
+    if (novoComodo) {
+      const comodoLimpo = novoComodo.replace(/[()./\-_\\,e]/g, "").trim();
+      console.log(comodoLimpo);
+      if (comodoLimpo && !comodos.includes(comodoLimpo)) {
+        setComodos((prevComodos) => [...prevComodos, comodoLimpo]);
+        setValue("novoComodo", ""); // Limpa o campo de entrada
+      }
     }
   };
 
