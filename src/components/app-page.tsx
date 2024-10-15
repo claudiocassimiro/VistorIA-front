@@ -97,7 +97,6 @@ export function AppPage() {
     const novoComodo = watch("novoComodo");
     if (novoComodo) {
       const comodoLimpo = novoComodo.replace(/[()./\-_\\,e]/g, "").trim();
-      console.log(comodoLimpo);
       if (comodoLimpo && !comodos.includes(comodoLimpo)) {
         setComodos((prevComodos) => [...prevComodos, comodoLimpo]);
         setValue("novoComodo", ""); // Limpa o campo de entrada
