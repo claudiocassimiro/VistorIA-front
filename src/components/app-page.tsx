@@ -73,6 +73,7 @@ interface FormData {
   enderecoImovel: string;
   numeroApartamento: string;
   novoComodo: string | undefined;
+  observacoesGerais: string;
 }
 
 export function AppPage() {
@@ -89,6 +90,7 @@ export function AppPage() {
         enderecoImovel: "",
         numeroApartamento: "",
         novoComodo: undefined,
+        observacoesGerais: "",
       },
     });
 
@@ -251,6 +253,7 @@ export function AppPage() {
     );
     formData.append("endereco_imovel", data.enderecoImovel);
     formData.append("numero_apartamento", data.numeroApartamento);
+    formData.append("observacoes_gerais", data.observacoesGerais);
     const observacoes: { [key: string]: string } = {};
     const rooms: { [key: string]: string } = {};
     todosComodos.forEach((comodo) => {
@@ -476,6 +479,16 @@ export function AppPage() {
                 </TabsTrigger>
               ))}
             </TabsList>
+            <div className="mb-4">
+              <Label htmlFor="observacoesGerais">Observações Gerais</Label>
+              <Textarea
+                id="observacoesGerais"
+                {...register("observacoesGerais")}
+                placeholder="Digite aqui as observações gerais sobre a vistoria"
+                className="mt-1"
+                rows={4}
+              />
+            </div>
             {comodos.map((comodo) => (
               <TabsContent key={comodo} value={comodo} className="mt-6">
                 <Card>
